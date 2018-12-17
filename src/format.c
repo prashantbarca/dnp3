@@ -492,7 +492,7 @@ char *dnp3_format_fragment_(const DNP3_Fragment *frag, bool do_objects, bool do_
     *p = '\0';
 
     // begin assembly of result string
-    x = appendf(&res, &size, "[%d] %s", (int)frag->ac.seq, flags);
+    x = appendf(&res, &size, "([%d], %s,", (int)frag->ac.seq, flags);
     if(x<0) goto err;
 
     // function name
@@ -500,9 +500,9 @@ char *dnp3_format_fragment_(const DNP3_Fragment *frag, bool do_objects, bool do_
     if(frag->fc < sizeof(funcnames) / sizeof(char *))
         name = funcnames[frag->fc];
     if(name)
-        x = appendf(&res, &size, "%s", name);
+        x = appendf(&res, &size, "\"%s\",", name);
     else
-        x = appendf(&res, &size, "0x%.2X", (unsigned int)frag->fc);
+        x = appendf(&res, &size, "0x%.2X,", (unsigned int)frag->fc);
     if(x<0) goto err;
 
     // add internal indications
@@ -525,7 +525,7 @@ char *dnp3_format_fragment_(const DNP3_Fragment *frag, bool do_objects, bool do_
     APPEND_IIN(config_corrupt);
     #undef APPEND_IIN
     if(iin) {
-        x = appendf(&res, &size, " (%s)", iin+1); // +1 to skip the leading ','
+        x = appendf(&res, &size, "(\"%s\"),", iin+1); // +1 to skip the leading ','
         free(iin);
         if(x<0) goto err;
     }
@@ -536,7 +536,7 @@ char *dnp3_format_fragment_(const DNP3_Fragment *frag, bool do_objects, bool do_
             char *blk = dnp3_format_oblock_(frag->odata[i], do_data);
             if(!blk) goto err;
 
-            x = appendf(&res, &size, " {%s}", blk);
+            x = appendf(&res, &size, " {%s},", blk);
             free(blk);
             if(x<0) goto err;
         }
@@ -544,9 +544,15 @@ char *dnp3_format_fragment_(const DNP3_Fragment *frag, bool do_objects, bool do_
 
     // add authdata
     if(frag->auth) {
-        x = appendf(&res, &size, " [auth]");    // XXX
+        x = appendf(&res, &size, "[\"auth\"])");    // XXX
         if(x<0) goto err;
     }
+    else
+    {
+        x = appendf(&res, &size, ")");    // XXX
+        if(x<0) goto err;
+    }
+        
 
     return res;
 
